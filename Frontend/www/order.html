@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title>Order - Pizza</title>
+
+    <!-- Bootsrap CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+
+    <!-- LESS основний файл -->
+    <link rel="stylesheet/less" type="text/css" href="assets/less/main.less" />
+    <!-- LESS JavaScript компілятор -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/less.js/2.5.3/less.min.js"></script>
+    
+</head>
+<body onload="initialize()">
+    
+    <div class="discount-panel">
+        
+        <div class="discount-hat"></div>
+        
+        <div class="discount-title">
+            <span>Цього тижня на все</span>
+        </div>
+        
+        <div class="discount-text">-20%</div>
+        
+    </div>
+    
+    <div class="navbar navbar-fixed-top top-panel">
+        
+        <div class="site-logo">
+            
+            <div class="discount-hat top-hat"></div>
+            
+            <a href="index.html">
+                <div class="site-logo-title">Pizza</div>
+                <div class="site-logo-title-main">KMA</div>
+            </a>
+            
+        </div>
+        
+        <div class="top-panel-up-row">
+            
+            <div class="main-top-panel-up-row">
+                
+                <div class="main-top-panel-content phone-number visible-xs-inline-block visible-sm-inline-block visible-lg-inline-block visible-md-inline-block">
+                    <span>+380 66 29 39 105</span>
+                </div>
+                
+                <div class="main-top-panel-content work-days visible-lg-inline-block visible-md-inline-block">
+                    <span>24 години та 7 днів на тиждень</span>
+                </div>
+                
+                <div class="main-top-panel-content delivery visible-lg-inline-block">
+                    <span>Безкоштовна доставка піци</span>
+                </div>
+                
+                <div type="button" class="btn btn-warning sign-in-button">
+                    <span>Увійти</span>
+                </div>
+                
+            </div>
+            
+        </div>
+        <div class="top-panel-down-row">
+            <span class="pizza-page">
+                <a href="index.html">Піца</a>
+            </span>
+        </div>
+        
+    </div>
+    
+    <div class="container-fluid">
+        
+        <div class="row" id="pizza_list">
+            
+            <div class="right-panel">
+                
+                <div class="orders-head">
+                    
+                    <span class="orders-head-title">
+                        Замовлення
+                        <span class="badge orange orders-counter-span">0</span>
+                    </span>
+                    <span class="clear-orders-list">Очистити кошик</span>
+                </div>
+                
+                <div class="orders-list">
+                </div>
+                
+                <div class="orders-sum">
+                    <span class="sum-title">Сума замовлення</span>
+                    <span class="sum-total">0</span>
+                    
+                    <div class="order-button-buy">
+                        <button type="button" class="btn btn-warning btn-lg btn-block button-reorder">
+                            Редагувати замовлення
+                        </button>
+                    </div>
+                    
+                </div>
+                
+            </div>
+            
+            <div class="left-panel">
+                
+				<div class="customs-order-form">
+				
+                <div class="form-title">
+                    Контактні дані
+                </div>
+				
+                <div class="row">
+				
+                    <div class="col-md-7">
+					
+                        <form class="form-horizontal">
+						
+                            <div class="form-group name-group">
+							
+                                <label class="col-sm-2 control-label">Ім'я</label>
+								
+                                <div class="col-sm-10">
+                                    <input class="form-control" type="text" id="name" oninput="namevalid()" placeholder="Ім’я Фамілія">
+                                </div>
+								
+								<span class="name-cheat cheat-hidden">
+									Введіть тільки власне ім'я, без цифр
+								</span>
+                            </div>
+							
+                            <div class="form-group phone-group">
+							
+                                <label class="col-sm-2 control-label">Телефон</label>
+								
+                                <div class="col-sm-10">
+                                    <input  class="form-control" type="text" id="phone" oninput="phonevalid()"  placeholder="+380996403177">
+                                </div>
+								
+								<span class="phone-cheat cheat-hidden">
+									Введіть номер телефону у форматі +380 або почніть з 0
+								</span>
+							
+                            </div>
+							
+                            <div class="form-group address-group">
+							
+                                <label class="col-sm-2 control-label">Адреса</label>
+								
+                                <div class="col-sm-10">
+                                    <input class="form-control" type="text" id="inputAdress" placeholder="Діснейленд, вулиця розбитих ліхтарів, 13">
+                                </div>
+								
+                            <span class="address-cheat cheat-hidden">
+                                Введіть адресу доставки піци
+                            </span>
+							
+                            </div>
+							
+                        </form>
+						
+                    </div>
+					
+                    <div class="col-md-5 order-summary">
+					
+                        <div class=" bs-callout short-order-info">
+						
+                            <h4>Інформація про замовлення</h4>
+							
+                            <p class="order-summery-time">
+                                <b>Приблизний час доставки:</b> невідомий
+                            </p>
+							
+                            <p class="order-summery-adress">
+                                <b>Адреса доставки:</b> невідома
+                            </p>
+							
+                        </div>
+						
+                    </div>
+					
+                </div>
+				
+                <div class="row">
+				
+                    <div class="form-group button-order-next">
+					
+                        <div class="next-step-width">
+						
+                            <button  type="button" class="btn btn-warning btn-block button-order-style">
+                                Далі
+                                <i class="glyphicon glyphicon-chevron-right icon-white"></i>
+                            </button>
+							
+                        </div>
+						
+                    </div>
+					
+                </div>
+				
+            </div>
+                
+            </div>
+            
+        </div>
+        
+    </div>
+    
+    <footer class="footer">
+        <p>Pizza.22 - практичний проект в межах курсу JavaScript в Києво-Могилянській Академії</p>
+        <p>Доставка піци не здійснюється</p>
+    </footer>
+
+<!-- jQuery JavaScript -->
+<script type="text/javascript" src="https://code.jquery.com/jquery-2.1.4.min.js"> </script>
+
+<!--Bootsrap JavaScript -->
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+    
+    <!--  Local Storage  -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lockr/0.8.4/lockr.js"></script>
+
+<!--Own JavaScript -->
+<script type="text/javascript"  src="assets/js/main.js"> </script>
+</body>
+</html>

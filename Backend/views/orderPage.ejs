@@ -1,0 +1,146 @@
+<% include common/header.ejs %>
+
+	<div class="container-fluid">
+        
+        <div class="row" id="pizza_list">
+            
+            <div class="right-panel">
+                
+                <div class="orders-head">
+                    
+                    <span class="orders-head-title">
+                        Замовлення
+                        <span class="badge orange orders-counter-span">0</span>
+                    </span>
+                </div>
+                
+                <div class="orders-list">
+                </div>
+                
+                <div class="orders-sum">
+                    <span class="sum-title">Сума замовлення</span>
+                    <span class="sum-total">0</span>
+                    
+                    <div class="order-button-buy">
+                        <button type="button" class="btn btn-warning btn-lg btn-block button-reorder">
+                            Редагувати замовлення
+                        </button>
+                    </div>
+                    
+                </div>
+                
+            </div>
+            
+            <div class="left-panel">
+                
+				<div class="customs-order-form">
+				
+                <div class="form-title">
+                    Контактні дані
+                </div>
+				
+                <div class="row">
+				
+                    <div class="col-md-7">
+					
+                        <form class="form-horizontal">
+						
+                            <div class="form-group name-group">
+							
+                                <label class="col-sm-2 control-label">Ім'я</label>
+								
+                                <div class="col-sm-10">
+                                    <input class="form-control" type="text" id="name" oninput="namevalid()" placeholder="Ім’я Фамілія">
+                                </div>
+								
+								<span class="name-cheat cheat-hidden">
+									Введіть тільки власне ім'я, без цифр
+								</span>
+                            </div>
+							
+                            <div class="form-group phone-group">
+							
+                                <label class="col-sm-2 control-label">Телефон</label>
+								
+                                <div class="col-sm-10">
+                                    <input  class="form-control" type="text" id="phone" oninput="phonevalid()"  placeholder="+380662939105">
+                                </div>
+								
+								<span class="phone-cheat cheat-hidden">
+									Введіть номер телефону у форматі +380 або почніть з 0
+								</span>
+							
+                            </div>
+							
+                            <div class="form-group address-group">
+							
+                                <label class="col-sm-2 control-label">Адреса</label>
+								
+                                <div class="col-sm-10">
+                                    <input class="form-control" type="text"
+                                            oninput="adressvalid()"
+                                           id="adress" placeholder="Діснейленд, вулиця розбитих ліхтарів, 13">
+                                </div>
+								
+                            <span class="address-cheat cheat-hidden">
+                                Введіть правильну адресу доставки піци
+                            </span>
+							
+                            </div>
+							
+                        </form>
+						
+                    </div>
+					
+                    <div class="col-md-5 order-summary">
+					
+                        <div class=" bs-callout short-order-info">
+						
+                            <h4>Інформація про замовлення</h4>
+							
+                            <p class="order-summery-time">
+                                <b>Приблизний час доставки:</b> невідомий
+                            </p>
+							
+                            <p class="order-summery-adress">
+                                <b>Адреса доставки:</b> невідома
+                            </p>
+							
+                        </div>
+						
+                    </div>
+					
+                </div>
+				
+                <div class="row">
+				
+                    <div class="form-group button-order-next">
+					
+                        <div class="next-step-width">
+						
+                            <button id="createOrder"  type="button" class="btn btn-warning btn-block button-order-style">
+                                Далі
+                                <i class="glyphicon glyphicon-chevron-right icon-white"></i>
+                            </button>
+							
+                        </div>
+						
+                    </div>
+					
+                </div>
+				
+            </div>
+			
+			<div id="googleMap" style="height:268px"></div>
+			
+			</div>
+            
+            <div id="liqpay"></div>
+                
+            </div>
+            
+        </div>
+        
+    </div>
+
+<% include common/footer.ejs %>

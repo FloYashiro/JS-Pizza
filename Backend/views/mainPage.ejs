@@ -1,0 +1,82 @@
+<% include common/header.ejs %>
+
+	<div class="container-fluid">
+        
+        <div class="row" id="pizza_list">
+            
+            <div class="right-panel">
+                
+                <div class="orders-head">
+                    
+                    <span class="orders-head-title">
+                        Замовлення
+                        <span class="badge orange orders-counter-span">0</span>
+                    </span>
+                    <span class="clear-orders-list">Очистити кошик</span>
+                </div>
+                
+                <div class="orders-list">
+                </div>
+                
+                <div class="orders-sum">
+                    <span class="sum-title">Сума замовлення</span>
+                    <span class="sum-total">0</span>
+                    
+                    <div class="order-button-buy">
+                        <button type="button" class="btn btn-warning btn-lg btn-block button-order">
+                            Замовити
+                        </button>
+                    </div>
+                    
+                </div>
+                
+            </div>
+            
+            <div class="left-panel">
+                <div class="food-name">
+                    <h2>
+                        <span class="food-name-title">Усі піци</span>
+                        <span class="badge orange pizza-count">0</span>
+                    </h2>
+                </div>
+                <div class="kind-of-pizza-wrap">
+                    
+                    <ul class="nav nav-pills kind-of-pizza">
+                        <li role="presentation" class="pizza-filter-button active" id="filter-button-all"><a>
+                            Усі
+                        </a></li>
+                        <li role="presentation" class="pizza-filter-button" id="filter-button-meat">
+                        <a>
+                            Мясні
+                        </a></li>
+                        <li role="presentation" class="pizza-filter-button" id="filter-button-pineapple">
+                        <a>
+                            З ананасами
+                        </a></li>
+                        <li role="presentation" class="pizza-filter-button" id="filter-button-mushrooms">
+                        <a>
+                            З грибами
+                        </a></li>
+                        <li role="presentation" class="pizza-filter-button" id="filter-button-ocean">
+                        <a>
+                            З морепродуктами
+                        </a></li>
+                        <li role="presentation" class="pizza-filter-button" id="filter-button-grass">
+                        <a>
+                            Вега
+                        </a></li>
+                    </ul>
+                    
+                </div>
+                
+                <div class="row food-list">
+                    
+                </div>
+                
+            </div>
+            
+        </div>
+        
+    </div>
+
+<% include common/footer.ejs %>

@@ -1,3 +1,211 @@
+
+/***************************
+*START ORDER PAGE FUNCTION *
+***************************/
+
+function validon(div, input, span) {
+    if(div.hasClass("input-error"))
+        div.removeClass("input-error");
+    div.addClass("input-success");
+    
+    if(input.hasClass("input-error-border"))
+        input.removeClass("input-error-border");
+    input.addClass("input-success-border");
+    
+    if(span.hasClass("cheat-show")) {
+        span.removeClass("cheat-show");
+    }
+    span.addClass("cheat-hidden");
+}
+
+function invalidon(div, input, span) {
+    if(div.hasClass("input-success"))
+        div.removeClass("input-success");
+    div.addClass("input-error");
+    
+    if(input.hasClass("input-success-border"))
+        input.removeClass("input-success-border");
+    input.addClass("input-error-border");
+    
+    if(span.hasClass("cheat-hidden")) {
+        span.removeClass("cheat-hidden");
+    }
+    span.addClass("cheat-show");
+}
+
+function namevalid() {
+    var input = $('#name');
+    var val = input.val();
+    
+    if(val.length < 2) {
+        invalidon($('.name-group'), input, $('.name-cheat'));
+        return false;
+    }
+    
+    for(var i = 0; i < val.length; i++) {
+        var char = val.charAt(i);
+        if(char <= "9" && char >= "0" || char == " ") {
+            invalidon($('.name-group'), input, $('.name-cheat'));
+            return false;
+        }
+    }
+    
+    validon($('.name-group'), input, $('.name-cheat'));
+    return true;
+}
+
+function phonevalid() {
+    var input = $('#phone');
+    var val = input.val();
+    
+    if(val.length != 13 && val.length != 10) {
+        invalidon($('.phone-group'), input, $('.phone-cheat'));
+        return false;
+    } else if(val.length == 13) {
+        if(val.charAt(0) != "+") {
+            invalidon($('.phone-group'), input, $('.phone-cheat'));
+            return false;
+        }
+        for(var i = 1; i < val.length; i++) {
+            var char = val.charAt(i);
+            if(char > "9" || char < "0") {
+                invalidon($('.phone-group'), input, $('.phone-cheat'));
+                return false;
+            }
+        }
+    } else if(val.length == 10) {
+        if(val.charAt(0) != "0") {
+            invalidon($('.phone-group'), input, $('.phone-cheat'));
+            return false;
+        }
+        for(var i = 1; i < val.length; i++) {
+            var char = val.charAt(i);
+            if(char > "9" || char < "0") {
+                invalidon($('.phone-group'), input, $('.phone-cheat'));
+                return false;
+            }
+        }
+    }
+    
+    validon($('.phone-group'), input, $('.phone-cheat'));
+    return true;
+}
+
+   
+    function	geocodeAddress(adress,	 callback)	{
+        var geocoder	=	new	google.maps.Geocoder();
+        geocoder.geocode({'address':	adress},	function(results,	status)	{
+            if	(status	===	google.maps.GeocoderStatus.OK&&	results[0])	{
+                var coordinates	=	results[0].geometry.location;
+                callback(null,	coordinates);
+            }	else	{
+                callback(new	Error("Can	not	find	the	adress"));
+            }
+        });
+    }
+
+    var isAdressValid = false;
+    
+    function adressvalid() {
+        var input = $('#adress');
+        var val = input.val();
+        
+        if(val.length > 6) {
+        geocodeAddress(val, function(err, coordinates) {
+            if(!err) {
+                $(".order-summery-adress").html("<b>Адреса доставки: </b>" + val);
+                validon($(".address-group"), input, $(".address-cheat"));
+                isAdressValid = true;
+                return true;
+            } else {
+                $(".order-summery-adress").html("<b>Адреса доставки: </b>невідома");
+                invalidon($(".address-group"), input, $(".address-cheat"));
+                isAdressValid = false;
+                return false;
+            }
+        });
+    } else {
+        invalidon($(".address-group"), input, $(".address-cheat"));
+        isAdressValid = false;
+        return false;
+    }
+}
+    
+function postRequest(url, data, callback) {
+    $.ajax({
+        url: url,
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(data),
+        success: function(data) {
+            callback(null, data);
+        },
+        error: function() {
+            callback(new Error("Ajax	Failed"));
+        }
+    })
+}
+
+$('.button-reorder').click(function() {
+    document.location.href="index.html";
+});
+
+$('#createOrder').click(function() {
+    if(!(namevalid() && phonevalid() && isAdressValid)) {
+        phonevalid();
+        adressvalid();
+        return;
+    }
+    
+    var phone = $('#phone').val();
+    var FIO = $('#name').val();
+    var adress = $('#adress').val();
+    
+    var list = "";
+    for(var i = 0; i < Cart.length; i++) {
+        var order = Cart[i];
+        list += order.pizza.title + " (кількість: " + order.quantity + ", розмір: ";
+        if(order.size == "big_size") {
+            list += "велика)";
+        } else {
+            list += "мала)";
+        }
+        if(i != Cart.length - 1) {
+            list += ", ";
+        } else {
+            list += ".";
+        }
+    }
+    var price = $('.sum-total').text();
+    postRequest("/api/create-order/", {phone: phone, FIO: FIO, adress: adress, list: list, price: price}, function(err, answer) {
+        if(!err) {
+            console.log(answer);
+            
+            LiqPayCheckout.init({
+                data: answer.data,
+                signature: answer.signature,
+                embedTo: "#liqpay",
+                mode: "popup" //	embed	||	popup
+            }).on("liqpay.callback", function(data) {
+                console.log(data.status);
+                console.log(data);
+            }).on("liqpay.ready", function(data) {
+                //	ready
+            }).on("liqpay.close", function(data) {
+                //	close
+            });            
+        } else {
+            console.log(err);
+        }
+    });
+}); 
+
+/***************************
+* END ORDER PAGE FUNCTION  *
+***************************/
+
+var Cart = [];    
+
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 /**
  * Created by diana on 12.01.16.
@@ -184,14 +392,123 @@ module.exports = pizza_info;
 var ejs = require('ejs');
 
 
-exports.PizzaMenu_OneItem = ejs.compile("<%\n\nfunction getIngredientsArray(pizza) {\n    //Отримує вміст піци\n    var content = pizza.content;\n    var result = [];\n\n    //Object.keys повертає масив ключів в об’єкті JavaScript\n\n    Object.keys(content).forEach(function(key){\n\n        //a.concat(b) створює спільний масив із масивів a та b\n        result = result.concat(content[key]);\n    });\n\n    return result;\n}\n\n   %>\n<div class=\"col-md-6 col-lg-4 pizza-card\">\n    <div class=\"thumbnail\">\n        <img class=\"pizza-icon\" src=\"<%= pizza.icon %>\" alt=\"Pizza\">\n\n        <% if(pizza.is_new) { %>\n        <span class=\"label label-danger\">Нова</span>\n        <% } else if(pizza.is_popular) {%>\n        <span class=\"label label-success\">Популярна</span>\n        <% } %>\n\n        <div class=\"caption\">\n            <span class=\"title\"><%= pizza.title %></span>\n            <div class=\"type\"><%= pizza.type %></div>\n            <div class=\"description\">\n                <%= getIngredientsArray(pizza).join(\", \") %>\n            </div>\n        </div>\n\n        <!-- Перед тим щоб показати кнопку необхідно переконатися, що піца має великий розмір -->\n        <button class=\"btn btn-primary buy-big\">Купити велику</button>\n    </div>\n</div>");
+exports.PizzaMenu_OneItem = ejs.compile("<%\r\n\r\nfunction getIngredientsArray(pizza) {\r\n    //Отримує вміст піци\r\n    var content = pizza.content;\r\n    var result = [];\r\n\r\n    //Object.keys повертає масив ключів в об’єкті JavaScript\r\n\r\n    Object.keys(content).forEach(function(key){\r\n\r\n        //a.concat(b) створює спільний масив із масивів a та b\r\n        result = result.concat(content[key]);\r\n    });\r\n\r\n    return result;\r\n}\r\n\r\n   %>\r\n\r\n<div class=\"col-md-6 col-lg-4 pizza-card\">\r\n    \r\n    <div class=\"thumbnail\">\r\n        \r\n        <img class=\"pizza-icon\" src=\"<%= pizza.icon %>\" alt=\"Pizza\">\r\n\r\n        <% if(pizza.is_new) { %>\r\n        <h3 class=\"pizza-label-new\"><span class=\"label label-danger\">Нова</span></h3>\r\n        <% } else if(pizza.is_popular) {%>\r\n        <h3 class=\"pizza-label-popular\"><span class=\"label label-success\">Популярна</span></h3>\r\n        <% } %>\r\n        \r\n        <div class=\"caption\">\r\n            \r\n            <span class=\"title\"><%= pizza.title %></span>\r\n            \r\n            <div class=\"type\"><%= pizza.type %></div>\r\n            \r\n            <div class=\"description\">\r\n                <%= getIngredientsArray(pizza).join(\", \") %>\r\n            </div>\r\n            \r\n            <div class=\"row\">\r\n                <% if(pizza.small_size) {%>\r\n                <% if(pizza.big_size) { %>\r\n                <div class=\"col-sm-6 pizza-small\">\r\n                <% } else {%>\r\n                <div class=\"col-sm-12 pizza-small\">\r\n                <% } %>\r\n                    <div>\r\n                        <img class=\"ui right spaced avatar image\" src=\"assets/images/size-icon.svg\">\r\n                        <span class=\"diagonal\"><%= pizza.small_size.size %></span>\r\n                    </div>\r\n                    \r\n                    <div>\r\n                        <img class=\"ui right spaced avatar image\" src=\"assets/images/weight.svg\">\r\n                        <span class=\"gram\"><%= pizza.small_size.weight %></span>\r\n                    </div>\r\n                    \r\n                    <h2>\r\n                        <div class=\"price\"><%= pizza.small_size.price %><div style=\"font-size:14px;\"> грн.</div></div>\r\n                    </h2>\r\n                    <a class=\"btn btn-warning buy-button-small\" role=\"button\">Купити</a>\r\n                    \r\n                </div>\r\n                <% } %>\r\n                    \r\n                <% if(pizza.big_size) { %>\r\n                <% if(pizza.small_size) { %>\r\n                <div class=\"col-sm-6 pizza-big\">\r\n                <% } else { %>\r\n                    <div class=\"col-sm-12 pizza-big\">\r\n                <% } %>\r\n                    <div>\r\n                        <img class=\"ui right spaced avatar image\" src=\"assets/images/size-icon.svg\">\r\n                            <span class=\"diagonal\"><%= pizza.big_size.size %></span>\r\n                    </div>\r\n                    \r\n                    <div>\r\n                        <img class=\"ui right spaced avatar image\" src=\"assets/images/weight.svg\">\r\n                        <span class=\"gram\"><%= pizza.big_size.weight %></span>\r\n                    </div>\r\n                    \r\n                    <h2>\r\n                        <div class=\"price\"><%= pizza.big_size.price %><div style=\"font-size:14px;\"> грн.</div></div>\r\n                    </h2>\r\n                    <a class=\"btn btn-warning  buy-button-big\" role=\"button\">Купити</a>\r\n                    \r\n                </div>\r\n                <% } %>\r\n                \r\n            </div>\r\n            \r\n        </div>\r\n                \r\n    </div>\r\n    \r\n</div>");
 
-exports.PizzaCart_OneItem = ejs.compile("<div>\n    <%= pizza.title %> (<%= size %>)\n    <div>Ціна: <%= pizza[size].price %> грн.</div>\n    <div>\n        <button class=\"btn btn-danger minus\">-</button>\n        <span class=\"label label-default\"><%= quantity %></span>\n        <button class=\"btn btn-success plus\">+</button>\n    </div>\n</div>");
+exports.PizzaCart_OneItem = ejs.compile("<div class=\"order-one\">\r\n    \r\n    <img class=\"pizza-icon\" title=\"<%= pizza.title %>\" src=\"<%= pizza.icon %>\">\r\n    \r\n    <p>\r\n        <span class=\"pizza-title\"><%= pizza.title %> (<%=(size == \"small_size\")?\"Мала\": \"Велика\"%>)</span>\r\n    </p>\r\n    \r\n    <div class=\"order-icons\">\r\n        <img class=\"diagonal-image\" src=\"assets/images/size-icon.svg\">\r\n        <span class=\"diagonal\"><%=(size == \"small_size\")?pizza.small_size.size: pizza.big_size.size%></span>\r\n        <img class=\"gram-image\" src=\"assets/images/weight.svg\">\r\n        <span class=\"gram\"><%=(size == \"small_size\")?pizza.small_size.weight: pizza.big_size.weight%></span>\r\n    </div>\r\n    \r\n    <div class=\"order-control-panel\">\r\n        \r\n        <span class=\"price\"><%=(size == \"small_size\")?pizza.small_size.price: pizza.big_size.price%></span>\r\n                            \r\n        <a class=\"minus btn btn-xs btn-danger btn-circle\">\r\n            <i class=\"glyphicon glyphicon-minus icon-white\"></i>\r\n        </a>\r\n                            \r\n        <span class=\"label order-pizza-count\"><%= quantity %></span>\r\n                            \r\n        <a class=\"plus btn btn-xs btn-success btn-circle\">\r\n            <i class=\"glyphicon glyphicon-plus icon-white\"></i>\r\n        </a>\r\n                            \r\n        <a class=\"count-clear btn btn-xs btn-default btn-circle\">\r\n            <i class=\"glyphicon glyphicon-remove icon-white\"></i>\r\n        </a>\r\n                            \r\n    </div>\r\n    \r\n</div>");
 
-},{"ejs":6}],3:[function(require,module,exports){
+},{"ejs":7}],3:[function(require,module,exports){
 /**
  * Created by chaika on 25.01.16.
  */
+    
+    function decodePanel() {
+        $(".minus").hide();
+        $(".plus").hide();
+        $(".count-clear").hide();
+        $(".order-control-panel").append("шт.");
+    }
+    
+    function	geocodeLatLng(latlng,	 callback){
+            //Модуль за роботу з адресою
+            var geocoder	=	new	google.maps.Geocoder();
+            geocoder.geocode({'location':	latlng},	function(results,	status)	{
+            if	(status	===	google.maps.GeocoderStatus.OK&&	results[1])	{
+                var adress =	results[1].formatted_address;
+                callback(null,	adress);
+            }	else	{
+                callback(new	Error("Can't	find	adress"));
+            }
+        });
+    }
+    
+
+    
+
+    
+    function calculateRoute(A_latlng, B_latlng, callback) {
+        var directionService = new google.maps.DirectionsService();
+        directionService.route({
+            origin: A_latlng,
+            destination: B_latlng,
+            travelMode: google.maps.TravelMode["DRIVING"]
+        }, function(response, status) {
+            if (status == google.maps.DirectionsStatus.OK) {
+                varleg = response.routes[0].legs[0];
+                callback(null, {
+                    duration: leg.duration
+                });
+            } else {
+                callback(new Error("Can'	not	find	direction"));
+            }
+        });
+    }
+    
+function calculateRoute(A_latlng, B_latlng, callback) {
+    var directionService = new google.maps.DirectionsService();
+    directionService.route({
+        origin: A_latlng,
+        destination: B_latlng,
+        travelMode: google.maps.TravelMode["DRIVING"]
+    }, function(response, status) {
+        if (status == google.maps.DirectionsStatus.OK) {
+            var leg = response.routes[0].legs[0];
+            callback(null, response);
+        } else {
+            callback(new Error("Can'	not	find	direction"));
+        }
+    });
+}
+    
+function initialize() {
+//Тут починаємо працювати з картою
+    var mapProp =	{
+        center:	new	google.maps.LatLng(50.464379,30.519131),
+        zoom:	13
+    };
+    var html_element =	document.getElementById("googleMap");
+    var map	=	new	google.maps.Map(html_element, mapProp);
+    //Карта створена і показана
+    var point	=	new	google.maps.LatLng(50.464379,30.519131);
+    var marker	=	new	google.maps.Marker({
+        position:	point,
+        //map	- це змінна карти створена за допомогою new	google.maps.Map(...)
+        map:	map,
+        icon:	"assets/images/map-icon.png"
+    });
+    decodePanel();
+    directionsDisplay = new google.maps.DirectionsRenderer();
+    directionsDisplay.setOptions( { suppressMarkers: true } );
+    var stopMarker = new google.maps.Marker();
+    google.maps.event.addListener(map, 'click',function(me){
+        var coordinates	=	me.latLng;
+        stopMarker.setMap(null);
+        geocodeLatLng(me.latLng, function(msg, adress) {
+            if(adress != undefined) {
+                $(".order-summery-adress").html("<b>Адреса доставки: </b>" + adress);
+                $('#adress').val(adress);
+                adressvalid();
+                calculateRoute("50.464379,30.519131", me.latLng, function(err, rout) {
+                    stopMarker = new google.maps.Marker({ position: coordinates, map: map, icon: 'assets/images/home-icon.png'});
+                    $('.order-summery-time').html("<b>Приблизний час доставки: </b>" + rout.routes[0].legs[0].duration.text);
+                    directionsDisplay.setMap(map);
+                    directionsDisplay.setDirections(rout);
+                });
+            } else {
+                $('.order-summery-time').html("<b>Приблизний час доставки: </b>невідомий");
+                $(".order-summery-adress").html("<b>Адреса доставки: </b>невідома");
+                console.log(msg);
+            }
+        });
+        //coordinates	- такий самий об’єкт як створений new google.maps.LatLng(...)
+    });
+    
+    
+    
+}
+//Коли сторінка завантажилась
+google.maps.event.addDomListener(window, 'load', initialize);
+    
+
 
 $(function(){
     //This code will execute when the page is ready
@@ -202,7 +519,7 @@ $(function(){
     PizzaCart.initialiseCart();
     PizzaMenu.initialiseMenu();
 
-
+    
 });
 },{"./Pizza_List":1,"./pizza/PizzaCart":4,"./pizza/PizzaMenu":5}],4:[function(require,module,exports){
 /**
@@ -217,14 +534,28 @@ var PizzaSize = {
 };
 
 //Змінна в якій зберігаються перелік піц в кошику
-var Cart = [];
+Cart = [];
 
 //HTML едемент куди будуть додаватися піци
-var $cart = $("#cart");
+var $cart = $(".orders-list");
+
+$(".clear-orders-list").click(function() {
+    Cart.length = 0;
+    updateCart();
+});
 
 function addToCart(pizza, size) {
     //Додавання однієї піци в кошик покупок
-
+    
+    for(var i = 0; i < Cart.length; i++) {
+        var order = Cart[i];
+        if(order.pizza == pizza && order.size == size) {
+            order.quantity++;
+            updateCart();
+            return;
+        }
+    }
+    
     //Приклад реалізації, можна робити будь-яким іншим способом
     Cart.push({
         pizza: pizza,
@@ -239,6 +570,13 @@ function addToCart(pizza, size) {
 function removeFromCart(cart_item) {
     //Видалити піцу з кошика
     //TODO: треба зробити
+    
+    for(var i = 0; i < Cart.length; i++) {
+        if(Cart[i] == cart_item) {
+            Cart.splice(i,1);
+            break;
+        }
+    }
 
     //Після видалення оновити відображення
     updateCart();
@@ -248,6 +586,12 @@ function initialiseCart() {
     //Фукнція віпрацьвуватиме при завантаженні сторінки
     //Тут можна наприклад, зчитати вміст корзини який збережено в Local Storage то показати його
     //TODO: ...
+    
+    var orders = Lockr.get("Cart");
+    
+    if(orders != undefined) {
+        Cart = orders;
+    }
 
     updateCart();
 }
@@ -255,7 +599,7 @@ function initialiseCart() {
 function getPizzaInCart() {
     //Повертає піци які зберігаються в кошику
     return Cart;
-}
+} 
 
 function updateCart() {
     //Функція викликається при зміні вмісту кошика
@@ -277,13 +621,51 @@ function updateCart() {
             //Оновлюємо відображення
             updateCart();
         });
+        
+        $node.find(".minus").click(function(){
+            if(cart_item.quantity > 1) {
+                cart_item.quantity -= 1;
+            } else {
+                for(var i = 0; i < Cart.length; i++) {
+                    if(Cart[i] == cart_item) {
+                        Cart.splice(i,1);
+                        break;
+                    }
+                }
+            }
+            
+            updateCart();
+        });
+        
+        $node.find(".count-clear").click(function(){
+            removeFromCart(cart_item);
+            //Оновлюємо відображення
+            updateCart();
+        });
 
         $cart.append($node);
     }
+    
+    $(".orders-counter-span").text(Cart.length);
+    
+    $(".sum-total").text(function() {
+        var sum = 0;
+        Cart.forEach(function(order) {
+            (order.size == PizzaSize.Small)? sum = sum + order.pizza.small_size.price * order.quantity: sum = sum + order.pizza.big_size.price * order.quantity;
+        })
+        return sum;
+    });
 
     Cart.forEach(showOnePizzaInCart);
+    
+    Lockr.set("Cart", Cart);
 
 }
+    
+$('.button-order').click(function() {
+    document.location.href="order.html";
+});
+
 
 exports.removeFromCart = removeFromCart;
 exports.addToCart = addToCart;
@@ -301,7 +683,7 @@ var PizzaCart = require('./PizzaCart');
 var Pizza_List = require('../Pizza_List');
 
 //HTML едемент куди будуть додаватися піци
-var $pizza_list = $("#pizza_list");
+var $pizza_list = $(".food-list");
 
 function showPizzaList(list) {
     //Очищаємо старі піци в кошику
@@ -313,15 +695,17 @@ function showPizzaList(list) {
 
         var $node = $(html_code);
 
-        $node.find(".buy-big").click(function(){
+        $node.find(".buy-button-big").click(function(){
             PizzaCart.addToCart(pizza, PizzaCart.PizzaSize.Big);
         });
-        $node.find(".buy-small").click(function(){
+        $node.find(".buy-button-small").click(function(){
             PizzaCart.addToCart(pizza, PizzaCart.PizzaSize.Small);
         });
 
         $pizza_list.append($node);
     }
+    
+    $(".pizza-count").text(list.length);
 
     list.forEach(showOnePizza);
 }
@@ -333,7 +717,11 @@ function filterPizza(filter) {
     Pizza_List.forEach(function(pizza){
         //Якщо піка відповідає фільтру
         //pizza_shown.push(pizza);
-
+        var con = pizza.content;
+        for(var key in con) {
+            if(key == filter)
+                pizza_shown.push(pizza);
+        }
         //TODO: зробити фільтри
     });
 
@@ -346,9 +734,58 @@ function initialiseMenu() {
     showPizzaList(Pizza_List)
 }
 
+$("#filter-button-all").click(function() {
+    $(".food-name-title").text("Усі піци");
+    $(".active").removeClass("active");
+    $("#filter-button-all").addClass("active");
+    showPizzaList(Pizza_List);
+});
+
+$("#filter-button-meat").click(function() {
+    $(".food-name-title").text("М'ясні піци");
+    $(".active").removeClass("active");
+    $("#filter-button-meat").addClass("active");
+    var filter = "meat";
+    filterPizza(filter);
+});
+
+$("#filter-button-pineapple").click(function() {
+    $(".food-name-title").text("Піци з ананнасами");
+    $(".active").removeClass("active");
+    $("#filter-button-pineapple").addClass("active");
+    var filter = "pineapple";
+    filterPizza(filter);
+});
+
+$("#filter-button-mushrooms").click(function() {
+    $(".food-name-title").text("Піци з грибами");
+    $(".active").removeClass("active");
+    $("#filter-button-mushrooms").addClass("active");
+    var filter = "mushroom";
+    filterPizza(filter);
+});
+
+$("#filter-button-ocean").click(function() {
+    $(".food-name-title").text("Піци з морепродуктами");
+    $(".active").removeClass("active");
+    $("#filter-button-ocean").addClass("active");
+    var filter = "ocean";
+    filterPizza(filter);
+});
+
+$("#filter-button-grass").click(function() {
+    $(".food-name-title").text("Вегетаріанські піци");
+    $(".active").removeClass("active");
+    $("#filter-button-grass").addClass("active");
+    var filter = "tomato";
+    filterPizza(filter);
+});
+
 exports.filterPizza = filterPizza;
 exports.initialiseMenu = initialiseMenu;
 },{"../Pizza_List":1,"../Templates":2,"./PizzaCart":4}],6:[function(require,module,exports){
+
+},{}],7:[function(require,module,exports){
 /*
  * EJS Embedded JavaScript templates
  * Copyright 2112 Matthew Eernisse (mde@fleegix.org)
@@ -395,19 +832,20 @@ exports.initialiseMenu = initialiseMenu;
  * @public
  */
 
-var fs = require('fs')
-  , utils = require('./utils')
-  , scopeOptionWarned = false
-  , _VERSION_STRING = require('../package.json').version
-  , _DEFAULT_DELIMITER = '%'
-  , _DEFAULT_LOCALS_NAME = 'locals'
-  , _REGEX_STRING = '(<%%|<%=|<%-|<%_|<%#|<%|%>|-%>|_%>)'
-  , _OPTS = [ 'cache', 'filename', 'delimiter', 'scope', 'context'
-            , 'debug', 'compileDebug', 'client', '_with', 'rmWhitespace'
-            , 'strict', 'localsName'
-            ]
-  , _TRAILING_SEMCOL = /;\s*$/
-  , _BOM = /^\uFEFF/;
+var fs = require('fs');
+var path = require('path');
+var utils = require('./utils');
+
+var scopeOptionWarned = false;
+var _VERSION_STRING = require('../package.json').version;
+var _DEFAULT_DELIMITER = '%';
+var _DEFAULT_LOCALS_NAME = 'locals';
+var _REGEX_STRING = '(<%%|%%>|<%=|<%-|<%_|<%#|<%|%>|-%>|_%>)';
+var _OPTS = [ 'cache', 'filename', 'delimiter', 'scope', 'context',
+        'debug', 'compileDebug', 'client', '_with', 'root', 'rmWhitespace',
+        'strict', 'localsName'];
+var _TRAILING_SEMCOL = /;\s*$/;
+var _BOM = /^\uFEFF/;
 
 /**
  * EJS template function cache. This can be a LRU object from lru-cache NPM
@@ -435,23 +873,43 @@ exports.localsName = _DEFAULT_LOCALS_NAME;
  * Get the path to the included file from the parent file path and the
  * specified path.
  *
- * @param {String} name     specified path
- * @param {String} filename parent file path
+ * @param {String}  name     specified path
+ * @param {String}  filename parent file path
+ * @param {Boolean} isDir    parent file path whether is directory
  * @return {String}
  */
-
-exports.resolveInclude = function(name, filename) {
-  var path = require('path')
-    , dirname = path.dirname
-    , extname = path.extname
-    , resolve = path.resolve
-    , includePath = resolve(dirname(filename), name)
-    , ext = extname(name);
+exports.resolveInclude = function(name, filename, isDir) {
+  var dirname = path.dirname;
+  var extname = path.extname;
+  var resolve = path.resolve;
+  var includePath = resolve(isDir ? filename : dirname(filename), name);
+  var ext = extname(name);
   if (!ext) {
     includePath += '.ejs';
   }
   return includePath;
 };
+
+/**
+ * Get the path to the included file by Options
+ * 
+ * @param  {String}  path    specified path
+ * @param  {Options} options compilation options
+ * @return {String}
+ */
+function getIncludePath(path, options){
+  var includePath;
+  if (path.charAt(0) == '/') {
+    includePath = exports.resolveInclude(path.replace(/^\/*/,''), options.root || '/', true);
+  }
+  else {
+    if (!options.filename) {
+      throw new Error('`include` use relative path requires the \'filename\' option.');
+    }
+    includePath = exports.resolveInclude(path, options.filename);  
+  }
+  return includePath;
+}
 
 /**
  * Get the template from a string or a file, either compiled on-the-fly or
@@ -472,35 +930,35 @@ exports.resolveInclude = function(name, filename) {
  */
 
 function handleCache(options, template) {
-  var fn
-    , path = options.filename
-    , hasTemplate = arguments.length > 1;
+  var func;
+  var filename = options.filename;
+  var hasTemplate = arguments.length > 1;
 
   if (options.cache) {
-    if (!path) {
+    if (!filename) {
       throw new Error('cache option requires a filename');
     }
-    fn = exports.cache.get(path);
-    if (fn) {
-      return fn;
+    func = exports.cache.get(filename);
+    if (func) {
+      return func;
     }
     if (!hasTemplate) {
-      template = fs.readFileSync(path).toString().replace(_BOM, '');
+      template = fs.readFileSync(filename).toString().replace(_BOM, '');
     }
   }
   else if (!hasTemplate) {
     // istanbul ignore if: should not happen at all
-    if (!path) {
+    if (!filename) {
       throw new Error('Internal EJS error: no file name or template '
                     + 'provided');
     }
-    template = fs.readFileSync(path).toString().replace(_BOM, '');
+    template = fs.readFileSync(filename).toString().replace(_BOM, '');
   }
-  fn = exports.compile(template, options);
+  func = exports.compile(template, options);
   if (options.cache) {
-    exports.cache.set(path, fn);
+    exports.cache.set(filename, func);
   }
-  return fn;
+  return func;
 }
 
 /**
@@ -518,10 +976,7 @@ function handleCache(options, template) {
 
 function includeFile(path, options) {
   var opts = utils.shallowCopy({}, options);
-  if (!opts.filename) {
-    throw new Error('`include` requires the \'filename\' option.');
-  }
-  opts.filename = exports.resolveInclude(path, opts.filename);
+  opts.filename = getIncludePath(path, opts);
   return handleCache(opts);
 }
 
@@ -531,24 +986,24 @@ function includeFile(path, options) {
  * @memberof module:ejs-internal
  * @param {String}  path    path for the specified file
  * @param {Options} options compilation options
- * @return {String}
+ * @return {Object}
  * @static
  */
 
 function includeSource(path, options) {
-  var opts = utils.shallowCopy({}, options)
-    , includePath
-    , template;
-  if (!opts.filename) {
-    throw new Error('`include` requires the \'filename\' option.');
-  }
-  includePath = exports.resolveInclude(path, opts.filename);
+  var opts = utils.shallowCopy({}, options);
+  var includePath;
+  var template;
+  includePath = getIncludePath(path,opts);
   template = fs.readFileSync(includePath).toString().replace(_BOM, '');
-
   opts.filename = includePath;
   var templ = new Template(template, opts);
   templ.generateSource();
-  return templ.source;
+  return {
+    source: templ.source,
+    filename: includePath,
+    template: template
+  };
 }
 
 /**
@@ -565,10 +1020,9 @@ function includeSource(path, options) {
  */
 
 function rethrow(err, str, filename, lineno){
-  var lines = str.split('\n')
-    , start = Math.max(lineno - 3, 0)
-    , end = Math.min(lines.length, lineno + 3);
-
+  var lines = str.split('\n');
+  var start = Math.max(lineno - 3, 0);
+  var end = Math.min(lines.length, lineno + 3);
   // Error context
   var context = lines.slice(start, end).map(function (line, i){
     var curr = i + start + 1;
@@ -653,10 +1107,9 @@ exports.compile = function compile(template, opts) {
  * @public
  */
 
-exports.render = function (template, data, opts) {
-  data = data || {};
-  opts = opts || {};
-  var fn;
+exports.render = function (template, d, o) {
+  var data = d || {};
+  var opts = o || {};
 
   // No options object -- if there are optiony names
   // in the data, copy them to options
@@ -681,12 +1134,12 @@ exports.render = function (template, data, opts) {
  */
 
 exports.renderFile = function () {
-  var args = Array.prototype.slice.call(arguments)
-    , path = args.shift()
-    , cb = args.pop()
-    , data = args.shift() || {}
-    , opts = args.pop() || {}
-    , result;
+  var args = Array.prototype.slice.call(arguments);
+  var filename = args.shift();
+  var cb = args.pop();
+  var data = args.shift() || {};
+  var opts = args.pop() || {};
+  var result;
 
   // Don't pollute passed in opts obj with new vals
   opts = utils.shallowCopy({}, opts);
@@ -703,7 +1156,7 @@ exports.renderFile = function () {
       cpOptsInData(data, opts);
     }
   }
-  opts.filename = path;
+  opts.filename = filename;
 
   try {
     result = handleCache(opts)(data);
@@ -742,6 +1195,7 @@ function Template(text, opts) {
   options.context = opts.context;
   options.cache = opts.cache || false;
   options.rmWhitespace = opts.rmWhitespace;
+  options.root = opts.root;
   options.localsName = opts.localsName || exports.localsName || _DEFAULT_LOCALS_NAME;
 
   if (options.strict) {
@@ -757,39 +1211,28 @@ function Template(text, opts) {
 }
 
 Template.modes = {
-  EVAL: 'eval'
-, ESCAPED: 'escaped'
-, RAW: 'raw'
-, COMMENT: 'comment'
-, LITERAL: 'literal'
+  EVAL: 'eval',
+  ESCAPED: 'escaped',
+  RAW: 'raw',
+  COMMENT: 'comment',
+  LITERAL: 'literal'
 };
 
 Template.prototype = {
   createRegex: function () {
-    var str = _REGEX_STRING
-      , delim = utils.escapeRegExpChars(this.opts.delimiter);
+    var str = _REGEX_STRING;
+    var delim = utils.escapeRegExpChars(this.opts.delimiter);
     str = str.replace(/%/g, delim);
     return new RegExp(str);
-  }
+  },
 
-, compile: function () {
-    var src
-      , fn
-      , opts = this.opts
-      , prepended = ''
-      , appended = ''
-      , escape = opts.escapeFunction;
-
-    if (opts.rmWhitespace) {
-      // Have to use two separate replace here as `^` and `$` operators don't
-      // work well with `\r`.
-      this.templateText =
-        this.templateText.replace(/\r/g, '').replace(/^\s+|\s+$/gm, '');
-    }
-
-    // Slurp spaces and tabs before <%_ and after _%>
-    this.templateText =
-      this.templateText.replace(/[ \t]*<%_/gm, '<%_').replace(/_%>[ \t]*/gm, '_%>');
+  compile: function () {
+    var src;
+    var fn;
+    var opts = this.opts;
+    var prepended = '';
+    var appended = '';
+    var escape = opts.escapeFunction;
 
     if (!this.source) {
       this.generateSource();
@@ -866,20 +1309,34 @@ Template.prototype = {
     };
     returnedFn.dependencies = this.dependencies;
     return returnedFn;
-  }
+  },
 
-, generateSource: function () {
-    var self = this
-      , matches = this.parseTemplateText()
-      , d = this.opts.delimiter;
+  generateSource: function () {
+    var opts = this.opts;
+
+    if (opts.rmWhitespace) {
+      // Have to use two separate replace here as `^` and `$` operators don't
+      // work well with `\r`.
+      this.templateText =
+        this.templateText.replace(/\r/g, '').replace(/^\s+|\s+$/gm, '');
+    }
+
+    // Slurp spaces and tabs before <%_ and after _%>
+    this.templateText =
+      this.templateText.replace(/[ \t]*<%_/gm, '<%_').replace(/_%>[ \t]*/gm, '_%>');
+
+    var self = this;
+    var matches = this.parseTemplateText();
+    var d = this.opts.delimiter;
 
     if (matches && matches.length) {
       matches.forEach(function (line, index) {
-        var opening
-          , closing
-          , include
-          , includeOpts
-          , includeSrc;
+        var opening;
+        var closing;
+        var include;
+        var includeOpts;
+        var includeObj;
+        var includeSrc;
         // If this is an opening tag, check for closing tags
         // FIXME: May end up with some false positives here
         // Better to store modes as k/v with '<' + delimiter as key
@@ -897,9 +1354,23 @@ Template.prototype = {
           // Must be in EVAL or RAW mode
           if (opening && (opening == '<' + d || opening == '<' + d + '-' || opening == '<' + d + '_')) {
             includeOpts = utils.shallowCopy({}, self.opts);
-            includeSrc = includeSource(include[1], includeOpts);
-            includeSrc = '    ; (function(){' + '\n' + includeSrc +
-                '    ; })()' + '\n';
+            includeObj = includeSource(include[1], includeOpts);
+            if (self.opts.compileDebug) {
+              includeSrc =
+                  '    ; (function(){' + '\n'
+                  + '      var __line = 1' + '\n'
+                  + '      , __lines = ' + JSON.stringify(includeObj.template) + '\n'
+                  + '      , __filename = ' + JSON.stringify(includeObj.filename) + ';' + '\n'
+                  + '      try {' + '\n'
+                  + includeObj.source
+                  + '      } catch (e) {' + '\n'
+                  + '        rethrow(e, __lines, __filename, __line);' + '\n'
+                  + '      }' + '\n'
+                  + '    ; }).call(this)' + '\n';
+            }else{
+              includeSrc = '    ; (function(){' + '\n' + includeObj.source +
+                  '    ; }).call(this)' + '\n';
+            }
             self.source += includeSrc;
             self.dependencies.push(exports.resolveInclude(include[1],
                 includeOpts.filename));
@@ -910,19 +1381,17 @@ Template.prototype = {
       });
     }
 
-  }
+  },
 
-, parseTemplateText: function () {
-    var str = this.templateText
-      , pat = this.regex
-      , result = pat.exec(str)
-      , arr = []
-      , firstPos
-      , lastPos;
+  parseTemplateText: function () {
+    var str = this.templateText;
+    var pat = this.regex;
+    var result = pat.exec(str);
+    var arr = [];
+    var firstPos;
 
     while (result) {
       firstPos = result.index;
-      lastPos = pat.lastIndex;
 
       if (firstPos !== 0) {
         arr.push(str.substring(0, firstPos));
@@ -939,12 +1408,12 @@ Template.prototype = {
     }
 
     return arr;
-  }
+  },
 
-, scanLine: function (line) {
-    var self = this
-      , d = this.opts.delimiter
-      , newLineCount = 0;
+  scanLine: function (line) {
+    var self = this;
+    var d = this.opts.delimiter;
+    var newLineCount = 0;
 
     function _addOutput() {
       if (self.truncate) {
@@ -953,7 +1422,7 @@ Template.prototype = {
         // after the tag that the truncation mode replaces
         // Handle Win / Unix / old Mac linebreaks -- do the \r\n
         // combo first in the regex-or
-        line = line.replace(/^(?:\r\n|\r|\n)/, '')
+        line = line.replace(/^(?:\r\n|\r|\n)/, '');
         self.truncate = false;
       }
       else if (self.opts.rmWhitespace) {
@@ -998,6 +1467,10 @@ Template.prototype = {
       case '<' + d + d:
         this.mode = Template.modes.LITERAL;
         this.source += '    ; __append("' + line.replace('<' + d + d, '<' + d) + '")' + '\n';
+        break;
+      case d + d + '>':
+        this.mode = Template.modes.LITERAL;
+        this.source += '    ; __append("' + line.replace(d + d + '>', d + '>') + '")' + '\n';
         break;
       case d + '>':
       case '-' + d + '>':
@@ -1059,6 +1532,20 @@ Template.prototype = {
 };
 
 /**
+ * Escape characters reserved in XML.
+ *
+ * This is simply an export of {@link module:utils.escapeXML}.
+ *
+ * If `markup` is `undefined` or `null`, the empty string is returned.
+ *
+ * @param {String} markup Input string
+ * @return {String} Escaped string
+ * @public
+ * @func
+ * */
+exports.escapeXML = utils.escapeXML;
+
+/**
  * Express.js support.
  *
  * This is an alias for {@link module:ejs.renderFile}, in order to support
@@ -1072,14 +1559,14 @@ exports.__express = exports.renderFile;
 // Add require support
 /* istanbul ignore else */
 if (require.extensions) {
-  require.extensions['.ejs'] = function (module, filename) {
-    filename = filename || /* istanbul ignore next */ module.filename;
+  require.extensions['.ejs'] = function (module, flnm) {
+    var filename = flnm || /* istanbul ignore next */ module.filename;
     var options = {
-          filename: filename
-        , client: true
-        }
-      , template = fs.readFileSync(filename).toString()
-      , fn = exports.compile(template, options);
+          filename: filename,
+          client: true
+        };
+    var template = fs.readFileSync(filename).toString();
+    var fn = exports.compile(template, options);
     module._compile('module.exports = ' + fn.toString() + ';', filename);
   };
 }
@@ -1099,7 +1586,7 @@ if (typeof window != 'undefined') {
   window.ejs = exports;
 }
 
-},{"../package.json":8,"./utils":7,"fs":9,"path":10}],7:[function(require,module,exports){
+},{"../package.json":9,"./utils":8,"fs":6,"path":10}],8:[function(require,module,exports){
 /*
  * EJS Embedded JavaScript templates
  * Copyright 2112 Matthew Eernisse (mde@fleegix.org)
@@ -1242,20 +1729,61 @@ exports.cache = {
 };
 
 
-},{}],8:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 module.exports={
-  "name": "ejs",
-  "description": "Embedded JavaScript templates",
-  "keywords": [
-    "template",
-    "engine",
-    "ejs"
+  "_args": [
+    [
+      {
+        "raw": "ejs@^2.4.1",
+        "scope": null,
+        "escapedName": "ejs",
+        "name": "ejs",
+        "rawSpec": "^2.4.1",
+        "spec": ">=2.4.1 <3.0.0",
+        "type": "range"
+      },
+      "C:\\Users\\White Sky Paradise\\Documents\\GitHub\\JS-Pizza"
+    ]
   ],
-  "version": "2.4.1",
+  "_from": "ejs@>=2.4.1 <3.0.0",
+  "_id": "ejs@2.5.2",
+  "_inCache": true,
+  "_location": "/ejs",
+  "_nodeVersion": "4.2.2",
+  "_npmOperationalInternal": {
+    "host": "packages-12-west.internal.npmjs.com",
+    "tmp": "tmp/ejs-2.5.2.tgz_1473259584869_0.9678213631268591"
+  },
+  "_npmUser": {
+    "name": "mde",
+    "email": "mde@fleegix.org"
+  },
+  "_npmVersion": "2.14.7",
+  "_phantomChildren": {},
+  "_requested": {
+    "raw": "ejs@^2.4.1",
+    "scope": null,
+    "escapedName": "ejs",
+    "name": "ejs",
+    "rawSpec": "^2.4.1",
+    "spec": ">=2.4.1 <3.0.0",
+    "type": "range"
+  },
+  "_requiredBy": [
+    "/"
+  ],
+  "_resolved": "https://registry.npmjs.org/ejs/-/ejs-2.5.2.tgz",
+  "_shasum": "21444ba09386f0c65b6eafb96a3d51bcb3be80d1",
+  "_shrinkwrap": null,
+  "_spec": "ejs@^2.4.1",
+  "_where": "C:\\Users\\White Sky Paradise\\Documents\\GitHub\\JS-Pizza",
   "author": {
     "name": "Matthew Eernisse",
     "email": "mde@fleegix.org",
     "url": "http://fleegix.org"
+  },
+  "bugs": {
+    "url": "https://github.com/mde/ejs/issues"
   },
   "contributors": [
     {
@@ -1264,46 +1792,35 @@ module.exports={
       "url": "https://timothygu.github.io"
     }
   ],
-  "license": "Apache-2.0",
-  "main": "./lib/ejs.js",
-  "repository": {
-    "type": "git",
-    "url": "git://github.com/mde/ejs.git"
-  },
-  "bugs": {
-    "url": "https://github.com/mde/ejs/issues"
-  },
-  "homepage": "https://github.com/mde/ejs",
   "dependencies": {},
+  "description": "Embedded JavaScript templates",
   "devDependencies": {
-    "browserify": "^8.0.3",
-    "istanbul": "~0.3.5",
+    "browserify": "^13.0.1",
+    "eslint": "^3.0.0",
+    "istanbul": "~0.4.3",
     "jake": "^8.0.0",
-    "jsdoc": "^3.3.0-beta1",
-    "lru-cache": "^2.5.0",
-    "mocha": "^2.1.0",
+    "jsdoc": "^3.4.0",
+    "lru-cache": "^4.0.1",
+    "mocha": "^3.0.2",
     "rimraf": "^2.2.8",
-    "uglify-js": "^2.4.16"
+    "uglify-js": "^2.6.2"
+  },
+  "directories": {},
+  "dist": {
+    "shasum": "21444ba09386f0c65b6eafb96a3d51bcb3be80d1",
+    "tarball": "https://registry.npmjs.org/ejs/-/ejs-2.5.2.tgz"
   },
   "engines": {
     "node": ">=0.10.0"
   },
-  "scripts": {
-    "test": "mocha",
-    "coverage": "istanbul cover node_modules/mocha/bin/_mocha",
-    "doc": "rimraf out && jsdoc -c jsdoc.json lib/* docs/jsdoc/*",
-    "devdoc": "rimraf out && jsdoc -p -c jsdoc.json lib/* docs/jsdoc/*"
-  },
-  "_id": "ejs@2.4.1",
-  "_shasum": "82e15b1b2a1f948b18097476ba2bd7c66f4d1566",
-  "_resolved": "https://registry.npmjs.org/ejs/-/ejs-2.4.1.tgz",
-  "_from": "ejs@>=2.4.1 <3.0.0",
-  "_npmVersion": "2.10.1",
-  "_nodeVersion": "0.12.4",
-  "_npmUser": {
-    "name": "mde",
-    "email": "mde@fleegix.org"
-  },
+  "homepage": "https://github.com/mde/ejs",
+  "keywords": [
+    "template",
+    "engine",
+    "ejs"
+  ],
+  "license": "Apache-2.0",
+  "main": "./lib/ejs.js",
   "maintainers": [
     {
       "name": "tjholowaychuk",
@@ -1314,15 +1831,21 @@ module.exports={
       "email": "mde@fleegix.org"
     }
   ],
-  "dist": {
-    "shasum": "82e15b1b2a1f948b18097476ba2bd7c66f4d1566",
-    "tarball": "http://registry.npmjs.org/ejs/-/ejs-2.4.1.tgz"
+  "name": "ejs",
+  "optionalDependencies": {},
+  "readme": "ERROR: No README data found!",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/mde/ejs.git"
   },
-  "directories": {},
-  "readme": "ERROR: No README data found!"
+  "scripts": {
+    "coverage": "istanbul cover node_modules/mocha/bin/_mocha",
+    "devdoc": "rimraf out && jsdoc -p -c jsdoc.json lib/* docs/jsdoc/*",
+    "doc": "rimraf out && jsdoc -c jsdoc.json lib/* docs/jsdoc/*",
+    "test": "mocha"
+  },
+  "version": "2.5.2"
 }
-
-},{}],9:[function(require,module,exports){
 
 },{}],10:[function(require,module,exports){
 (function (process){
@@ -1554,14 +2077,103 @@ var substr = 'ab'.substr(-1) === 'b'
 }).call(this,require('_process'))
 },{"_process":11}],11:[function(require,module,exports){
 // shim for using process in browser
-
 var process = module.exports = {};
+
+// cached from whatever global is present so that test runners that stub it
+// don't break things.  But we need to wrap it in a try catch in case it is
+// wrapped in strict mode code which doesn't define any globals.  It's inside a
+// function because try/catches deoptimize in certain engines.
+
+var cachedSetTimeout;
+var cachedClearTimeout;
+
+function defaultSetTimout() {
+    throw new Error('setTimeout has not been defined');
+}
+function defaultClearTimeout () {
+    throw new Error('clearTimeout has not been defined');
+}
+(function () {
+    try {
+        if (typeof setTimeout === 'function') {
+            cachedSetTimeout = setTimeout;
+        } else {
+            cachedSetTimeout = defaultSetTimout;
+        }
+    } catch (e) {
+        cachedSetTimeout = defaultSetTimout;
+    }
+    try {
+        if (typeof clearTimeout === 'function') {
+            cachedClearTimeout = clearTimeout;
+        } else {
+            cachedClearTimeout = defaultClearTimeout;
+        }
+    } catch (e) {
+        cachedClearTimeout = defaultClearTimeout;
+    }
+} ())
+function runTimeout(fun) {
+    if (cachedSetTimeout === setTimeout) {
+        //normal enviroments in sane situations
+        return setTimeout(fun, 0);
+    }
+    // if setTimeout wasn't available but was latter defined
+    if ((cachedSetTimeout === defaultSetTimout || !cachedSetTimeout) && setTimeout) {
+        cachedSetTimeout = setTimeout;
+        return setTimeout(fun, 0);
+    }
+    try {
+        // when when somebody has screwed with setTimeout but no I.E. maddness
+        return cachedSetTimeout(fun, 0);
+    } catch(e){
+        try {
+            // When we are in I.E. but the script has been evaled so I.E. doesn't trust the global object when called normally
+            return cachedSetTimeout.call(null, fun, 0);
+        } catch(e){
+            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error
+            return cachedSetTimeout.call(this, fun, 0);
+        }
+    }
+
+
+}
+function runClearTimeout(marker) {
+    if (cachedClearTimeout === clearTimeout) {
+        //normal enviroments in sane situations
+        return clearTimeout(marker);
+    }
+    // if clearTimeout wasn't available but was latter defined
+    if ((cachedClearTimeout === defaultClearTimeout || !cachedClearTimeout) && clearTimeout) {
+        cachedClearTimeout = clearTimeout;
+        return clearTimeout(marker);
+    }
+    try {
+        // when when somebody has screwed with setTimeout but no I.E. maddness
+        return cachedClearTimeout(marker);
+    } catch (e){
+        try {
+            // When we are in I.E. but the script has been evaled so I.E. doesn't  trust the global object when called normally
+            return cachedClearTimeout.call(null, marker);
+        } catch (e){
+            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error.
+            // Some versions of I.E. have different rules for clearTimeout vs setTimeout
+            return cachedClearTimeout.call(this, marker);
+        }
+    }
+
+
+
+}
 var queue = [];
 var draining = false;
 var currentQueue;
 var queueIndex = -1;
 
 function cleanUpNextTick() {
+    if (!draining || !currentQueue) {
+        return;
+    }
     draining = false;
     if (currentQueue.length) {
         queue = currentQueue.concat(queue);
@@ -1577,7 +2189,7 @@ function drainQueue() {
     if (draining) {
         return;
     }
-    var timeout = setTimeout(cleanUpNextTick);
+    var timeout = runTimeout(cleanUpNextTick);
     draining = true;
 
     var len = queue.length;
@@ -1594,7 +2206,7 @@ function drainQueue() {
     }
     currentQueue = null;
     draining = false;
-    clearTimeout(timeout);
+    runClearTimeout(timeout);
 }
 
 process.nextTick = function (fun) {
@@ -1606,7 +2218,7 @@ process.nextTick = function (fun) {
     }
     queue.push(new Item(fun, args));
     if (queue.length === 1 && !draining) {
-        setTimeout(drainQueue, 0);
+        runTimeout(drainQueue);
     }
 };
 
